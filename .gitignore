@@ -1,2 +1,3 @@
+*.pyc
 puchengy/test-share-weights-cnn/checkpoint
 puchengy/test-share-weights-cnn/data
