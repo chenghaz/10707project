@@ -16,10 +16,10 @@ from models import *
 from torch.autograd import Variable
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--K', default=64, type=int, help='hidden layer length')
 parser.add_argument('--data_path', default='./data', type=str, help='data_path')
-parser.add_argument('--cp_path', default='./checkpoint/ckpt.t7', type=str, help='check point path')
+parser.add_argument('--cp_path', default='./checkpoint/Res18ckpt.t7', type=str, help='check point path')
 parser.add_argument('--progress', default=True, type=bool, help='show progress bar')
 args = parser.parse_args()
 
@@ -55,7 +55,7 @@ print('==> find tunine model..')
 assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
 checkpoint = torch.load(args.cp_path, map_location=lambda storage, loc: storage)
 net = checkpoint['net']
-ssdh = SSDH(net, args.K)
+ssdh = SSDH_RES(net, args.K)
 
 # cuda usage
 if use_cuda:
@@ -88,11 +88,11 @@ def train(epoch):
         # loss1: cross entropy
         loss1 = criterion(outputs, targets)
         # loss2: force to 0/1
-        loss2 = loss_function2(hidden)
+        # loss2 = loss_function2(hidden)
         # loss3: force 50%, 50%
-        loss3 = loss_function3(hidden)
-        loss = loss1 - loss2 + loss3
-        # loss = loss1
+        # loss3 = loss_function3(hidden)
+        # loss = loss1 - loss2 + loss3
+        loss = loss1
         loss.backward()
         optimizer.step()
 
@@ -142,7 +142,7 @@ def test(epoch):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ssdh_' + str(args.K))
+        torch.save(state, './checkpoint/ssdh_res_' + str(args.K) + '_1_loss')
         best_acc = acc
 
 
