@@ -1,14 +1,47 @@
 MAP top 50
 
-16:
+[VGG]
+
+16(3 Loss Correct):
+16(3 Loss wrong): 0.931914645824
 16(1 Loss): 0.906408174973
 
-32:
+32(3 Loss Correct):
+32(3 Loss wrong): 0.9336797737
 32(1 Loss): 0.913487620762
 
-64:
+64(3 Loss Correct):
+64(3 Loss wrong): 0.93314556849
 64(1 Loss): 0.916006616845
 
-128:
+128(3 Loss Correct):
+128(3 Loss wrong): 0.93298240959
 128(1 Loss): 0.912941347481
 
+[Res18]
+
+16(3 Loss): 
+16(1 Loss): 0.906408174973
+
+32(3 Loss): 
+32(1 Loss): 0.913487620762
+
+64(3 Loss): 
+64(1 Loss): 0.916006616845
+
+128(3 Loss): 
+128(1 Loss): 0.912941347481
+
+[Combination]
+
+16(3 Loss): 
+16(1 Loss): 
+
+32(3 Loss): 
+32(1 Loss): 
+
+64(3 Loss): 
+64(1 Loss): 
+
+128(3 Loss): 
+128(1 Loss): 

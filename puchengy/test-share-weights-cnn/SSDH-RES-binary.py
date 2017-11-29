@@ -18,7 +18,7 @@ import numpy as np
 import pickle
 
 parser = argparse.ArgumentParser(description='PyTorch SSDH-binary Prediction')
-parser.add_argument('--cp_path', default='./checkpoint/ssdh', type=str, help='load find tune')
+parser.add_argument('--cp_path', default='ll', type=str, help='load find tune')
 parser.add_argument('--data_path', default='./data', type=str, help='load find tune')
 parser.add_argument('--K', default=64, type=int, help='hidden units number')
 args = parser.parse_args()
@@ -49,7 +49,7 @@ print('==> find tune model..')
 assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
 checkpoint = torch.load(args.cp_path, map_location=lambda storage, loc: storage)
 ssdh = checkpoint['net']
-binary_predictor = SSDH_BINARY(ssdh)
+binary_predictor = SSDH_RES_BINARY(ssdh)
 
 # cuda usage
 if use_cuda:
@@ -105,6 +105,6 @@ params = {
     'binary_code_test': binary_code_test,
     'binary_code_train': binary_code_train
 }
-pickle_file = open('./checkpoint/binary_code_' + str(args.K) + '_1_loss', 'wb')
+pickle_file = open('./checkpoint/binary_code_res_' + str(args.K) + '_1_loss', 'wb')
 pickle.dump(params, pickle_file)
 pickle_file.close()

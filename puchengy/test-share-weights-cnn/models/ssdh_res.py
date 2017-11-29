@@ -35,3 +35,26 @@ class SSDH_RES(nn.Module):
         hidden = self.sigmoid(self.f2h(out))
         output = self.h2o(hidden)
         return hidden, output
+
+class SSDH_RES_BINARY(nn.Module):
+    def __init__(self, res):
+        super(SSDH_RES_BINARY, self).__init__()
+        self.conv1 = res.conv1
+        self.bn1 = res.bn1
+        self.layer1 = res.layer1
+        self.layer2 = res.layer2
+        self.layer3 = res.layer3
+        self.layer4 = res.layer4
+        self.f2h = res.f2h
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.avg_pool2d(out, 4)
+        out = out.view(out.size(0), -1)
+        hidden = (torch.sign(self.sigmoid(self.f2h(out)) - 0.5) + 1) / 2
+        return hidden

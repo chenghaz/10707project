@@ -75,7 +75,7 @@ optimizer = optim.SGD(ssdh.parameters(), lr=args.lr, momentum=0.9, weight_decay=
 # Training
 def train(epoch):
     print('\nEpoch: %d' % epoch)
-    net.train()
+    ssdh.train()
     train_loss = 0
     correct = 0
     total = 0
