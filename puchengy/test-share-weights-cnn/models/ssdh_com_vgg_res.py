@@ -50,7 +50,7 @@ class SSDH_COM_VGG_RES_BINARY(nn.Module):
     def __init__(self, com):
         super(SSDH_COM_VGG_RES_BINARY, self).__init__()
         # vgg net
-        self.features = com.feature
+        self.features = com.features
         self.f2h_vgg = com.f2h_vgg
         # res net
         self.conv1 = com.conv1

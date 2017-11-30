@@ -18,9 +18,10 @@ import numpy as np
 import pickle
 
 parser = argparse.ArgumentParser(description='PyTorch SSDH-binary Prediction')
-parser.add_argument('--cp_path', default='./checkpoint/ssdh', type=str, help='load find tune')
+parser.add_argument('--cp_path', type=str, help='check point path')
 parser.add_argument('--data_path', default='./data', type=str, help='load find tune')
-parser.add_argument('--K', default=64, type=int, help='hidden units number')
+parser.add_argument('--save_path', type=str, help='check point path')
+parser.add_argument('--model', type=str, help='check point path')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -48,8 +49,13 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 print('==> find tune model..')
 assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
 checkpoint = torch.load(args.cp_path, map_location=lambda storage, loc: storage)
-ssdh = checkpoint['net']
-binary_predictor = SSDH_BINARY(ssdh)
+model = checkpoint['net']
+if args.model == 'com':
+    binary_predictor = SSDH_COM_VGG_RES_BINARY(model)
+elif args.model == 'vgg':
+    binary_predictor = SSDH_BINARY(model)
+else:
+    binary_predictor = SSDH_RES_BINARY(model)
 
 # cuda usage
 if use_cuda:
@@ -105,6 +111,6 @@ params = {
     'binary_code_test': binary_code_test,
     'binary_code_train': binary_code_train
 }
-pickle_file = open('./checkpoint/binary_code_' + str(args.K) + '_1_loss', 'wb')
+pickle_file = open(args.save_path, 'wb')
 pickle.dump(params, pickle_file)
 pickle_file.close()

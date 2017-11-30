@@ -17,14 +17,16 @@ from torch.autograd import Variable
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
-parser.add_argument('--K', default=64, type=int, help='hidden layer length')
+parser.add_argument('--K', type=int, help='hidden layer length')
 parser.add_argument('--data_path', default='./data', type=str, help='data_path')
 parser.add_argument('--cp_path_vgg', default='./checkpoint/ckpt.t7', type=str, help='check point path')
 parser.add_argument('--cp_path_res', default='./checkpoint/Res18ckpt.t7', type=str, help='check point path')
-parser.add_argument('--progress', default=True, type=bool, help='show progress bar')
+parser.add_argument('--Loss', type=int, help='hidden layer length')
+parser.add_argument('--save_path', type=str, help='check point path')
+parser.add_argument('--model', type=str, help='check point path')
 args = parser.parse_args()
 
-progress = True
+progress = False
 if progress:
     from utils import progress_bar
 
@@ -33,7 +35,7 @@ best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
-print('==> Preparing data..')
+# print('==> Preparing data..')
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
@@ -52,13 +54,22 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False,
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 # Load fine tune model.
-print('==> find tunine model..')
+# print('==> find tunine model..')
 assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-checkpoint_vgg = torch.load(args.cp_path_vgg, map_location=lambda storage, loc: storage)
-vgg = checkpoint_vgg['net']
-checkpoint_res = torch.load(args.cp_path_res, map_location=lambda storage, loc: storage)
-res = checkpoint_res['net']
-ssdh = SSDH_COM_VGG_RES(vgg, res, args.K)
+if args.model == 'com':
+    checkpoint_vgg = torch.load(args.cp_path_vgg, map_location=lambda storage, loc: storage)
+    vgg = checkpoint_vgg['net']
+    checkpoint_res = torch.load(args.cp_path_res, map_location=lambda storage, loc: storage)
+    res = checkpoint_res['net']
+    ssdh = SSDH_COM_VGG_RES(vgg, res, args.K)
+elif args.model == 'vgg':
+    checkpoint = torch.load(args.cp_path_vgg, map_location=lambda storage, loc: storage)
+    net = checkpoint['net']
+    ssdh = SSDH(net, args.K)
+else:
+    checkpoint = torch.load(args.cp_path_res, map_location=lambda storage, loc: storage)
+    net = checkpoint['net']
+    ssdh = SSDH_RES(net, args.K)
 
 # cuda usage
 if use_cuda:
@@ -67,6 +78,10 @@ if use_cuda:
     cudnn.benchmark = True
 
 def loss_function2(hidden):
+    return Variable.mean(Variable.pow(Variable.add(hidden, -0.5), 2))
+
+def loss_function3_2(hidden):
+    # wrong one
     return Variable.sum(Variable.mean(Variable.pow(Variable.add(hidden, -0.5), 2), 1))
 
 def loss_function3(hidden):
@@ -77,7 +92,6 @@ optimizer = optim.SGD(ssdh.parameters(), lr=args.lr, momentum=0.9, weight_decay=
 
 # Training
 def train(epoch):
-    print('\nEpoch: %d' % epoch)
     ssdh.train()
     train_loss = 0
     correct = 0
@@ -88,14 +102,24 @@ def train(epoch):
         optimizer.zero_grad()
         inputs, targets = Variable(inputs), Variable(targets)
         hidden, outputs = ssdh(inputs)
-        # loss1: cross entropy
-        loss1 = criterion(outputs, targets)
-        # loss2: force to 0/1
-        # loss2 = loss_function2(hidden)
-        # loss3: force 50%, 50%
-        # loss3 = loss_function3(hidden)
-        # loss = loss1 - loss2 + loss3
-        loss = loss1
+        if args.Loss == 1:
+            # loss1: cross entropy
+            loss1 = criterion(outputs, targets)
+            loss = loss1
+        elif args.Loss == 2:
+            # loss1: cross entropy
+            loss1 = criterion(outputs, targets)
+            # loss2: force to 0/1
+            loss2 = loss_function2(hidden)
+            loss = loss1 - loss2
+        else:
+            # loss1: cross entropy
+            loss1 = criterion(outputs, targets)
+            # loss2: force to 0/1
+            loss2 = loss_function3_2(hidden)
+            # loss3: force 50%, 50%
+            loss3 = loss_function3(hidden)
+            loss = loss1 + loss2 + loss3
         loss.backward()
         optimizer.step()
 
@@ -118,13 +142,24 @@ def test(epoch):
             inputs, targets = inputs.cuda(), targets.cuda()
         inputs, targets = Variable(inputs, volatile=True), Variable(targets)
         hidden, outputs = ssdh(inputs)
-        # loss1: cross entropy
-        loss1 = criterion(outputs, targets)
-        # loss2: force to 0/1
-        # loss2 = loss_function2(hidden)
-        # loss3: force 50%, 50%
-        # loss3 = loss_function3(hidden)
-        loss = loss1
+        if args.Loss == 1:
+            # loss1: cross entropy
+            loss1 = criterion(outputs, targets)
+            loss = loss1
+        elif args.Loss == 2:
+            # loss1: cross entropy
+            loss1 = criterion(outputs, targets)
+            # loss2: force to 0/1
+            loss2 = loss_function2(hidden)
+            loss = loss1 - loss2
+        else:
+            # loss1: cross entropy
+            loss1 = criterion(outputs, targets)
+            # loss2: force to 0/1
+            loss2 = loss_function3_2(hidden)
+            # loss3: force 50%, 50%
+            loss3 = loss_function3(hidden)
+            loss = loss1 + loss2 + loss3
 
         test_loss += loss.data[0]
         _, predicted = torch.max(outputs.data, 1)
@@ -137,7 +172,7 @@ def test(epoch):
     # Save checkpoint.
     acc = 100.*correct/total
     if acc > best_acc:
-        print('Saving..')
+        # print('Saving..')
         state = {
             'net': ssdh.module if use_cuda else ssdh,
             'acc': acc,
@@ -145,10 +180,13 @@ def test(epoch):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ssdh_com_vgg_res_' + str(args.K) + '_1_loss')
+        torch.save(state, args.save_path)
         best_acc = acc
 
 
-for epoch in range(start_epoch, start_epoch+200):
+for epoch in range(start_epoch, start_epoch+30):
     train(epoch)
     test(epoch)
+
+print(args.save_path + ': '),
+print(best_acc)

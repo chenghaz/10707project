@@ -15,7 +15,7 @@ train = params['binary_code_train']
 top = args.top
 aps = []
 for i in range(len(test)):
-    print(i)
+    # print(i)
     test_labels = np.tile(test[i, -1], (len(train), ))
     test_features = np.tile(test[i, :-1], (len(train), 1))
     train_features = train[:, :-1]
@@ -29,9 +29,9 @@ for i in range(len(test)):
     ap = []
     count = 0
     correct = 0
-    for i in range(top):
+    for j in range(top):
         count += 1
-        if top_results[i]:
+        if top_results[j]:
             correct += 1
             ap.append(correct * 1.0 / count)
     if len(ap) != 0:
